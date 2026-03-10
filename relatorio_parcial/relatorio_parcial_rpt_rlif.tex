@@ -1,0 +1,290 @@
+\documentclass[11pt,a4paper]{article}
+
+% --------------------------------------------------
+% Pacotes Essenciais (Padrão UFPR)
+% --------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{helvet} % Fonte similar a Arial
+\usepackage{indentfirst} % Indenta o primeiro parágrafo
+\usepackage{url}
+
+% Configuração de Fonte (Arial)
+\renewcommand{\familydefault}{\sfdefault}
+
+% Configuração de Margens (2cm em tudo)
+\geometry{top=2cm, bottom=2cm, left=2cm, right=2cm}
+
+% Espaçamento 1.5
+\onehalfspacing
+
+% Remove numeração de páginas automática (pode ajustar se necessário)
+\pagenumbering{gobble}
+
+\begin{document}
+
+% --------------------------------------------------
+% 1. CAPA
+% --------------------------------------------------
+\thispagestyle{empty}
+
+\begin{center}
+    \textbf{UFPR} \\
+    \textbf{UNIVERSIDADE FEDERAL DO PARANÁ} \\
+    \vspace{0.5cm}
+    MINISTÉRIO DA EDUCAÇÃO \\
+    UNIVERSIDADE FEDERAL DO PARANÁ \\
+    PRÓ-REITORIA DE PESQUISA E PÓS-GRADUAÇÃO \\
+    COORDENADORIA DE INICIAÇÃO CIENTÍFICA E INTEGRAÇÃO ACADÊMICA \\
+    PROGRAMA DE INICIAÇÃO CIENTÍFICA E EM DESENVOLVIMENTO TECNOLÓGICO E INOVAÇÃO
+    
+    \vspace{3cm}
+    
+    \textbf{ANGELO MAN DE OLIVEIRA}
+    
+    \vspace{3cm}
+    
+    \textbf{RELATÓRIO PARCIAL}
+    
+    \vspace{1.5cm}
+\end{center}
+
+% Bloco de seleção (PIBIC / Modalidade)
+\noindent
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{PROGRAMA DE IC:}\\
+    (X) PIBIC\\
+    ( ) PIBIC Af\\
+    ( ) PIBIC EM\\
+    ( ) PIBITI
+\end{minipage}%
+\begin{minipage}[t]{0.48\textwidth}
+    \textbf{MODALIDADE:}\\
+    ( ) CNPq\\
+    ( ) UFPR TN\\
+    ( ) Fundação Araucária\\
+    ( ) Voluntária
+\end{minipage}
+
+\vspace{2cm}
+
+% Bloco de Informações do Projeto (Canto Inferior Direito)
+\begin{flushright}
+\begin{minipage}{0.6\textwidth}
+    \small
+    \singlespacing
+    Relatório apresentado à Coordenação de Iniciação Científica e Tecnológica da Universidade Federal do Paraná como requisito parcial da conclusão das atividades de Iniciação Científica – Edital 2025/2026.
+    
+    \vspace{0.3cm}
+    \textbf{Orientador(a):} Prof.(a). Rodrigo Clemente Thom de Souza
+    
+    \vspace{0.3cm}
+    \textbf{Título do Projeto:} Análise do alinhamento entre Reinforcement Pre-Training e Reinforcement Learning with Internal Feedback em tarefas de matemática e programação.
+\end{minipage}
+\end{flushright}
+
+\vfill
+
+\begin{center}
+    \textbf{JANDAIA DO SUL} \\
+    \textbf{2026}
+\end{center}
+
+\newpage
+
+% --------------------------------------------------
+% 2. TÍTULO (Página 2)
+% --------------------------------------------------
+\begin{center}
+    \textbf{\large Análise do alinhamento entre Reinforcement Pre-Training e Reinforcement Learning with Internal Feedback em tarefas de matemática e programação}
+\end{center}
+\vspace{1cm}
+
+% --------------------------------------------------
+% 3. ALTERAÇÕES REALIZADAS (Obrigatório)
+% --------------------------------------------------
+\section{ALTERAÇÕES REALIZADAS NO PLANO DE TRABALHO SUBMETIDO}
+
+Inicialmente, era previsto o uso dos datasets OmniMATH e Codeforces Problems, com o objetivo de abranger problemas matemáticos e algorítmicos. No entanto, a aplicação desses datasets implicaria em dificuldades práticas de avaliação automática.
+
+Diante disso, optou-se por empregar o benchmark HumanEval para a avaliação do desempenho algorítmico e o benchmark GSM8K para a avaliação do desempenho matemático.
+% --------------------------------------------------
+% 4. RESUMO
+% --------------------------------------------------
+\section{RESUMO}
+
+Este projeto tem como objetivo analisar o alinhamento entre Reinforcement Pre-Training (RPT) e Reinforcement Learning from Internal Feedback (RLIF) em tarefas de raciocínio matemático e programação. Para isso, são utilizados problemas dos datasets GSM8K e Humaneval, avaliando modelos de linguagem de pequeno porte sob diferentes regimes de aprendizado por reforço. As métricas de desempenho incluem acurácia em matemática, porcentagem de códigos aceitos (métrica Pass@1), estabilidade do treinamento e custo computacional. Até o momento, foram definidos os datasets principais, as métricas de avaliação, os modelos a serem comparados e desenvolvidos experimentos preliminares.
+
+
+% --------------------------------------------------
+% 5. INTRODUÇÃO
+% --------------------------------------------------
+\section{INTRODUÇÃO}
+
+Os modelos de linguagem têm apresentado avanços significativos na resolução de problemas algorítmicos e matemáticos que exigem raciocínio complexo. Técnicas de treinamento como o pre-training e o aprendizado por reforço aplicado no fine-tuning têm se consolidado como ferramentas robustas para o aprimoramento do desempenho desses modelos.
+
+Entretanto, as abordagens tradicionais do reinforcement learning, como o RLHF e o RLVR, no fine-tuning apresentam limitações relevantes. O RLHF depende de extensas anotações humanas, o que eleva custos e pode introduzir vieses, enquanto o RLVR exige verificadores específicos de domínio e respostas de referência, restringindo sua aplicação a cenários cuidadosamente curados, como matemática e programação.
+
+Além disso, o pre-training tradicional apresenta limitações quando aplicado a tarefas que exigem raciocínio estruturado e tomada de decisão. Por ser baseado predominantemente na predição estatística do próximo token, esse processo não incentiva explicitamente a construção de cadeias de raciocínio nem a validação de hipóteses intermediárias.
+
+Diante disso, este trabalho investiga o alinhamento entre RPT e RLIF em tarefas de matemática e programação, analisando o potêncial desse alinhamento.
+
+
+% --------------------------------------------------
+% 6. REVISÃO DA LITERATURA
+% --------------------------------------------------
+\section{REVISÃO DE LITERATURA}
+
+O treinamento de modelos de linguagem por meio de aprendizado por reforço tem avançado rapidamente, gerando diferentes estratégias para superar limitações do ajuste supervisionado. Entre as abordagens emergentes destacam-se o \textit{Reinforcement Pre-Training} (RPT) e o \textit{Reinforcement Learning from Internal Feedback} (RLIF), que diferem essencialmente na origem e na natureza do sinal de recompensa utilizado.
+
+O RPT propõe a incorporação de objetivos de reforço já na etapa de pré-treinamento, permitindo que o modelo adquira políticas e vieses inductivos úteis antes do fine-tuning em tarefas específicas \cite{dong2025rpt}. Essa estratégia pode favorecer a emergência de capacidades de raciocínio estruturado e reduzir a necessidade de grandes quantidades de supervisão posterior.
+
+No cenário de ajuste fino, abordagens baseadas em recompensas verificáveis externas — que chamamos aqui de RLVR (Reinforcement Learning with Verifiable Rewards) — utilizam sinais objetivos como execução de código, testes unitários ou rótulos humanos verificáveis para orientar o aprendizado. Tais sinais tendem a produzir melhorias robustas em tarefas cuja correção pode ser automaticamente avaliada, especialmente em programação e raciocínio simbólico, mas dependem da disponibilidade e qualidade dos validadores externos.
+
+Em contraste, o RLIF substitui ou complementa recompensas externas por sinais internos gerados pelo próprio modelo (por exemplo, medidas de confiança, consistência entre gerações ou estatísticas da distribuição preditiva) \cite{zhao2025rlif}. Métodos que exploram esse tipo de feedback intrínseco (como propostas baseadas em self-likelihood ou self-certainty) visam tornar o treinamento mais autônomo e escalável em cenários onde avaliações externas são inexistentes, caras ou ruidosas. No entanto, sinais internos podem introduzir vieses e requerem mecanismos de regularização para evitar colapsos de entropia ou deriva indesejada da política.
+
+Paralelamente, avanços em algoritmos de otimização para RL em LLMs têm mostrado impacto prático. O Group Relative Policy Optimization (GRPO), apresentado no contexto do DeepSeekMath, é um exemplo de variante que compara respostas dentro de grupos de amostras para melhorar a estabilidade e a eficiência computacional em tarefas de raciocínio matemático \cite{shao2024deepseekmath}. A combinação de técnicas de otimização (p.ex., GRPO) com esquemas de recompensa apropriados tem sido crucial para resultados de ponta em problemas complexos sem recorrer a processos de votação massiva ou tool-use.
+
+Em suma, a literatura aponta para uma transição parcial de metodologias fortemente dependentes de sinais externos para esquemas mais autônomos que exploram feedback interno, mas ressalta a necessidade de estudos comparativos que avaliem trade-offs entre desempenho, estabilidade e preservação do conhecimento prévio. É nesse contexto que o presente trabalho se insere: comparar empiricamente RPT, RLVR e RLIF em benchmarks de raciocínio matemático e geração de código, avaliando não apenas acurácia mas também estabilidade do treinamento e custo computacional.
+
+% --------------------------------------------------
+% 7. MATERIAS E METODOS
+% --------------------------------------------------
+\section{Materiais e Métodos}
+
+\subsection{Modelo base}
+Foi utilizado como modelo inicial o \textbf{Qwen2.5-Coder-1.5B-Instruct}, um modelo de linguagem causal especializado em geração de código. O ajuste fino foi realizado por meio de \textit{Low-Rank Adaptation} (LoRA), mantendo os pesos principais congelados para reduzir custo computacional.
+
+\subsection{Paradigma de treinamento}
+O modelo foi ajustado utilizando \textbf{Reinforcement Learning from Internal Feedback (RLIF)}, implementado com \textit{Group Relative Policy Optimization} (GRPO).
+
+Diferentemente de abordagens supervisionadas ou baseadas em verificação externa, a função de recompensa foi definida exclusivamente a partir de um sinal interno do próprio modelo, baseado na probabilidade atribuída aos tokens gerados.
+
+A recompensa foi definida como a média da log-probabilidade dos tokens da resposta gerada (self-likelihood), excluindo os tokens do prompt. Esse mecanismo caracteriza RLIF por utilizar feedback intrínseco derivado da distribuição preditiva do próprio modelo.
+
+\subsection{Dados de treinamento}
+Foi utilizado o dataset \textbf{MBPP (Mostly Basic Python Problems), versão sanitized}, contendo problemas de programação em linguagem natural acompanhados de implementações de referência em Python.
+
+Os exemplos foram formatados em estrutura ChatML, instruindo o modelo a gerar exclusivamente o corpo indentado da função correspondente ao problema.
+
+\subsection{Configuração de treinamento}
+
+\begin{itemize}
+\item Learning rate: $1\times10^{-6}$
+\item LoRA rank: 16
+\item Batch efetivo: 8 (acumulação de gradiente)
+\item Gerações por prompt: 4
+\item Penalidade KL: 0.01
+\item Precisão FP16
+\item Temperatura de geração: 0.7
+\end{itemize}
+
+O treinamento foi realizado por uma época completa sobre o conjunto MBPP.
+
+\subsection{Avaliação}
+O desempenho foi avaliado no benchmark \textbf{HumanEval}, utilizando a métrica \textbf{pass@1}, que mede a proporção de problemas resolvidos corretamente em uma única geração.
+
+Foram comparados três modelos:
+
+\begin{enumerate}
+\item modelo base sem ajuste adicional
+\item modelo ajustado com RLVR (baseline supervisionado)
+\item modelo ajustado com RLIF (proposto)
+\end{enumerate}
+
+\section{Resultados e Discussão (Preliminares)}
+
+\subsection{Desempenho global}
+
+\begin{center}
+\begin{tabular}{lc}
+\hline
+Modelo & Pass@1 \\
+\hline
+RLIF & \textbf{62.8\%} \\
+Base & 61.0\% \\
+RLVR & 60.4\% \\
+\hline
+\end{tabular}
+\end{center}
+
+O modelo treinado com RLIF apresentou desempenho ligeiramente superior ao modelo base e ao modelo ajustado supervisionadamente. A diferença observada corresponde a um ganho absoluto de aproximadamente 1--2 pontos percentuais.
+
+\subsection{Interpretação do resultado}
+
+O desempenho do modelo treinado com RLIF permaneceu próximo ao do modelo base, com uma melhora moderada observada nesta execução específica do experimento.
+
+Como a avaliação foi realizada com uma única geração por problema e uma única execução de treinamento, não é possível afirmar significância estatística do ganho observado. Portanto, os resultados devem ser interpretados como evidência preliminar de que o uso de feedback interno não degradou o desempenho e pode produzir melhora marginal.
+
+\subsection{Estabilidade relativa do comportamento}
+
+A proximidade entre os resultados do modelo RLIF e do modelo base sugere que o treinamento com recompensa interna preservou, em grande medida, o comportamento funcional previamente aprendido durante o pré-treinamento e ajuste instrucional.
+
+Isso indica que o sinal de recompensa interno utilizado no treinamento não induziu mudanças drásticas na política de geração sob o regime experimental adotado.
+
+\subsection{Comparação com RLVR}
+
+O modelo RLVR apresentou desempenho ligeiramente inferior ao modelo base nesta configuração experimental. Isso sugere que, para o conjunto de hiperparâmetros e dados utilizados, o treinamento supervisionado adicional não produziu ganho mensurável em pass@1.
+
+Por outro lado, o modelo RLIF manteve desempenho comparável ao modelo base, apresentando pequena vantagem numérica.
+
+\subsection{Limitações experimentais}
+
+Os resultados ainda são preliminares devido a:
+
+\begin{itemize}
+\item avaliação com uma única amostra por problema
+\item ausência de múltiplas execuções com diferentes sementes
+\item ausência de intervalos de confiança estatísticos
+\item treinamento realizado por apenas uma época
+\end{itemize}
+
+Consequentemente, o ganho observado deve ser interpretado como indicativo, e não conclusivo.
+
+\subsection{Síntese preliminar}
+
+Os experimentos indicam que:
+
+\begin{enumerate}
+\item o treinamento com RLIF preserva desempenho próximo ao modelo base
+\item não houve evidência de degradação funcional sob recompensa interna
+\item foi observada pequena melhora em avaliação de execução única
+\item são necessários experimentos adicionais para confirmar robustez do efeito
+\end{enumerate}
+
+
+% --------------------------------------------------
+% 9. REFERÊNCIAS
+% --------------------------------------------------
+\section{REFERÊNCIAS}
+
+\begin{thebibliography}{99}
+
+\bibitem{zhao2025rlif}
+ZHAO, Xuandong; KANG, Zhewei; FENG, Aosong; LEVINE, Sergey; SONG, Dawn.
+\textit{Learning to Reason without External Rewards}.
+arXiv preprint arXiv:2505.19590, 2025.
+Disponível em: \url{https://arxiv.org/abs/2505.19590}. 
+
+\bibitem{dong2025rpt}
+DONG, Qingxiu; DONG, Li; TANG, Yao; YE, Tianzhu; SUN, Yutao; SUI, Zhifang; WEI, Furu.
+\textit{Reinforcement Pre-Training}.
+arXiv preprint arXiv:2506.08007, 2025.
+Disponível em: \url{https://arxiv.org/abs/2506.08007}. 
+
+\bibitem{shao2024deepseekmath}
+SHAO, Zhihong; WANG, Peiyi; ZHU, Qihao; XU, Runxin; SONG, Junxiao; BI, Xiao; 
+ZHANG, Haowei; ZHANG, Mingchuan; LI, Y. K.; WU, Y.; GUO, Daya.
+\textit{DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models}.
+arXiv preprint arXiv:2402.03300, 2024.
+Disponível em: \url{https://arxiv.org/abs/2402.03300}. 
+
+\end{thebibliography}
+
+\noindent
+
+\end{document}
