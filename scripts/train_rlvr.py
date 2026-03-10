@@ -1,124 +1,172 @@
+import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel
-from human_eval.data import write_jsonl, read_problems
-from tqdm import tqdm
 import re
+import threading
+import textwrap
+
+# --- 1. VACINAS DE ESTABILIDADE (RTX 3060 + WINDOWS) ---
+torch.cuda.is_bf16_supported = lambda: False
+os.environ["ACCELERATE_MIXED_PRECISION"] = "fp16"
+
+from transformers import modeling_utils
+_original_to = modeling_utils.PreTrainedModel.to
+def _patched_to(self, *args, **kwargs):
+    try:
+        return _original_to(self, *args, **kwargs)
+    except ValueError as e:
+        raise e
+modeling_utils.PreTrainedModel.to = _patched_to
+# ---------------------------------------------------------------
+
+from datasets import load_dataset
+from trl import GRPOTrainer, GRPOConfig
+from peft import LoraConfig, TaskType
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # --- CONFIGURAÇÕES ---
-BASE_MODEL = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
-ADAPTER_PATH = "qwen-rlvr-v17"  # Pasta onde seu treino foi salvo
-OUTPUT_FILE = "samples_rlvr_v17.jsonl"
-DEVICE = "cuda"
+MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+OUTPUT_DIR = "qwen-rlvr-v1" # Pasta onde o modelo treinado será salvo
 
-print(f"🔄 Carregando Tokenizer: {BASE_MODEL}...")
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+# --- 2. FUNÇÃO DE RECOMPENSA EXTERNA (RLVR) ---
 
-print(f"🔄 Carregando Modelo Base: {BASE_MODEL}...")
-base_model = AutoModelForCausalLM.from_pretrained(
-    BASE_MODEL,
-    torch_dtype=torch.float16,
-    device_map="auto",
-    trust_remote_code=True
-)
-
-# ⚠️ CRUCIAL: Redimensionar igual ao treino para o LoRA encaixar
-print(f"📏 Ajustando embeddings para tamanho: {len(tokenizer)}...")
-base_model.resize_token_embeddings(len(tokenizer))
-
-print(f"🧠 Acoplando o Cérebro Treinado (LoRA): {ADAPTER_PATH}...")
-model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
-model.eval() # Modo de inferência (desliga dropout)
-
-problems = read_problems()
-
-def limpar_codigo_rlvr(prompt_original, completion):
+def run_code_safe(code_string, timeout=1.0):
     """
-    Limpa a saída do modelo treinado com RLVR.
-    O modelo V17 aprendeu a dar 4 espaços, mas às vezes repete a assinatura.
+    Executa o código com um limite de tempo. 
+    Vital no RLVR para o treino não congelar se o modelo gerar um loop infinito (while True).
     """
-    # 1. Remove Markdown
-    if "```python" in completion:
-        completion = completion.split("```python")[1].split("```")[0]
-    elif "```" in completion:
-        completion = completion.split("```")[1].split("```")[0]
+    result = [False]
     
-    # 2. Remove espaços em branco extras no começo/fim geral
-    completion = completion.strip("\n") 
+    def target():
+        try:
+            # Executa o código num ambiente isolado (dicionário vazio)
+            exec(code_string, {})
+            result[0] = True
+        except Exception:
+            pass # Erro de sintaxe, import inválido ou falha no assert
+            
+    thread = threading.Thread(target=target)
+    thread.start()
+    thread.join(timeout)
     
-    # 3. Verifica se o modelo repetiu a assinatura (ex: "def soma(a,b):")
-    # O HumanEval já fornece o prompt, então precisamos remover a assinatura se ela aparecer
-    match_def = re.search(r"def\s+(\w+)\s*\(", prompt_original)
-    if match_def:
-        nome_funcao = match_def.group(1)
-        lines = completion.split('\n')
+    if thread.is_alive():
+        return False # Estourou o tempo limite (Timeout)
+    return result[0]
+
+def reward_rlvr_execution(completions, test_list, **kwargs):
+    """
+    A essência do RLVR: A recompensa vem do ambiente (Testes Unitários), não da probabilidade.
+    """
+    rewards = []
+    
+    for completion, tests in zip(completions, test_list):
+        # 1. Limpa a saída do modelo (remove Markdown)
+        code = completion.strip()
+        if "```python" in code:
+            code = code.split("```python")[1].split("```")[0]
+        elif "```" in code:
+            code = code.split("```")[1].split("```")[0]
         
-        # Se a primeira linha for a definição da função, removemos ela
-        if len(lines) > 0 and f"def {nome_funcao}" in lines[0]:
-            completion = "\n".join(lines[1:])
+        # 2. Prepara o código com os testes do MBPP (ex: assert add(1,2) == 3)
+        code = textwrap.dedent(code)
+        tests_str = "\n".join(tests)
+        full_execution_code = f"{code}\n\n{tests_str}"
+        
+        # 3. Executa e Recompensa
+        passou = run_code_safe(full_execution_code)
+        
+        if passou:
+            rewards.append(1.0)  # Recompensa positiva (Feedback Externo de Sucesso)
+        else:
+            rewards.append(-1.0) # Punição (Erro de lógica ou compilação)
+            
+    return rewards
+
+# --- 3. PREPARAÇÃO DOS DADOS ---
+def format_data_func(example):
+    gold_code = example.get('code', '')
+    match = re.search(r"def\s+\w+\s*\(.*?\):", gold_code, re.DOTALL)
+    signature = match.group(0) if match else "def solution():"
     
-    return completion
-
-samples = []
-print(f"🚀 Iniciando geração para {len(problems)} problemas...")
-
-# System Message usada no treino V17
-system_msg = "You are a Python coding engine. Respond ONLY with the indented function body."
-
-for task_id in tqdm(problems):
-    problem = problems[task_id]
-    
-    # --- PROMPT V17 (Simulando o ambiente de treino) ---
-    # O HumanEval dá o prompt até a assinatura.
-    # Vamos formatar para parecer o treino.
+    prompt_raw = example.get('prompt', example.get('text', ''))
+    system_msg = "You are a Python coding engine. Respond ONLY with the indented function body."
     
     prompt_text = (
         f"<|im_start|>system\n{system_msg}<|im_end|>\n"
-        f"<|im_start|>user\nImplement:\n{problem['prompt']}\n<|im_end|>\n"
+        f"<|im_start|>user\nImplement:\n{signature}\n\"\"\"\n{prompt_raw}\n\"\"\"\n<|im_end|>\n"
         f"<|im_start|>assistant\n" 
     )
     
-    inputs = tokenizer(prompt_text, return_tensors="pt").to(DEVICE)
-    
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs, 
-            max_new_tokens=512, 
-            temperature=0.1, # Baixa temperatura para precisão
-            top_p=0.95,
-            do_sample=True
-        )
-    
-    raw_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
-    # Pega apenas a resposta do assistente
-    if "assistant" in raw_output:
-        raw_completion = raw_output.split("assistant")[-1]
-    else:
-        raw_completion = raw_output
+    return {
+        "prompt": prompt_text,
+        "test_list": example['test_list'] # Passamos a lista de testes para o GRPOTrainer usar na recompensa
+    }
 
-    # Limpa e formata
-    final_completion = limpar_codigo_rlvr(problem['prompt'], raw_completion)
+# --- 4. EXECUÇÃO PRINCIPAL ---
+def main():
+    print(f"--- INICIANDO TREINO {OUTPUT_DIR} (RLVR - Verificador Externo) ---")
     
-    samples.append(dict(task_id=task_id, completion=final_completion))
-
-# Salva o arquivo
-write_jsonl(OUTPUT_FILE, samples)
-print(f"✅ Arquivo gerado: {OUTPUT_FILE}")
-
-# Tenta importar o avaliador
-try:
-    print("\n--- AVALIAÇÃO AUTOMÁTICA ---")
-    from human_eval.evaluation import evaluate_functional_correctness
-    
-    results = evaluate_functional_correctness(
-        sample_file=OUTPUT_FILE, 
-        k=[1],
-        n_workers=4,
-        timeout=3.0
+    peft_config = LoraConfig(
+        r=16, 
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj", "gate_proj"],
+        task_type=TaskType.CAUSAL_LM,
+        lora_alpha=32,
+        lora_dropout=0.05,
     )
-    print(f"🏆 Resultado RLVR V17 (Pass@1): {results['pass@1'] * 100:.2f}%")
+
+    training_args = GRPOConfig(
+        output_dir=OUTPUT_DIR,
+        learning_rate=1e-6, 
+        num_train_epochs=1,
+        per_device_train_batch_size=1, 
+        gradient_accumulation_steps=8, 
+        num_generations=4,             
+        max_prompt_length=600,
+        max_completion_length=512,
+        logging_steps=5,
+        save_steps=50,
+        fp16=True,       
+        beta=0.01,       
+        use_vllm=False,                
+        report_to="none",
+        temperature=0.7, 
+    )
+
+    print("Carregando Tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
+    tokenizer.padding_side = "right" 
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token 
+
+    print("Carregando Modelo (FP16)...")
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_NAME,
+        torch_dtype=torch.float16, 
+        device_map="auto",
+        trust_remote_code=True,
+    )
+    model.config.pad_token_id = tokenizer.pad_token_id
+    model.resize_token_embeddings(len(tokenizer))
+
+    print("Carregando Dataset (MBPP)...")
+    dataset = load_dataset("mbpp", "sanitized", split="train")
+    dataset = dataset.map(format_data_func, batched=False)
+
+    print("Iniciando Trainer...")
+    trainer = GRPOTrainer(
+        model=model,
+        reward_funcs=reward_rlvr_execution, # Usando a recompensa por execução de testes
+        args=training_args,
+        train_dataset=dataset,
+        peft_config=peft_config,
+        processing_class=tokenizer,
+    )
+
+    print("TREINO RLVR INICIADO! (Modo Execução com Verificador)")
+    trainer.train()
     
-except ImportError:
-    print("⚠️ Human-Eval não instalado ou não encontrado.")
-    print(f"Rode manualmente: evaluate_functional_correctness {OUTPUT_FILE}")
+    print("Salvando modelo final...")
+    trainer.save_model(OUTPUT_DIR)
+    print(f"Modelo RLVR salvo com sucesso na pasta: {OUTPUT_DIR}")
+
+if __name__ == "__main__":
+    main()

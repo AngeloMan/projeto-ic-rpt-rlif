@@ -128,7 +128,7 @@ def main():
             
             # --- MONITOR COMPLETO ---
             if i == 0:
-                print(f"\n🧠 MONITOR RLIF | Confiança: {certainty_score:.4f}")
+                print(f"\nMONITOR RLIF | Confiança: {certainty_score:.4f}")
                 print("-" * 50)
                 # AGORA MOSTRA TUDO:
                 print(completions[i].strip()) 
@@ -150,12 +150,12 @@ def main():
         processing_class=tokenizer,
     )
 
-    print("🚀 TREINO RLIF INICIADO!")
+    print("TREINO RLIF INICIADO!")
     trainer.train()
     
     print("Salvando modelo final...")
     trainer.save_model(OUTPUT_DIR)
-    print(f"✅ Modelo RLIF salvo em: {OUTPUT_DIR}")
+    print(f"Modelo RLIF salvo em: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()

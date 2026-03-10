@@ -12,10 +12,10 @@ ADAPTER_PATH = "qwen-rlvr" # Sua pasta do treino
 OUTPUT_FILE = "samples_rlvr.jsonl"
 DEVICE = "cuda"
 
-print(f"🔄 Carregando Tokenizer: {BASE_MODEL}...")
+print(f"Carregando Tokenizer: {BASE_MODEL}...")
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
 
-print(f"🔄 Carregando Modelo Base: {BASE_MODEL}...")
+print(f"Carregando Modelo Base: {BASE_MODEL}...")
 base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
     torch_dtype=torch.float16,
@@ -23,11 +23,11 @@ base_model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 )
 
-# ⚠️ CRUCIAL: Redimensionar igual ao treino para o LoRA encaixar
-print(f"📏 Ajustando embeddings para tamanho: {len(tokenizer)}...")
+# Redimensionar igual ao treino para o LoRA encaixar
+print(f"Ajustando embeddings para tamanho: {len(tokenizer)}...")
 base_model.resize_token_embeddings(len(tokenizer))
 
-print(f"🧠 Acoplando o Cérebro Treinado (LoRA): {ADAPTER_PATH}...")
+print(f"Acoplando o Cérebro Treinado (LoRA): {ADAPTER_PATH}...")
 model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
 model.eval() # Modo de inferência
 
@@ -85,7 +85,7 @@ def tratar_codigo(prompt_original, completion):
     return completion_limpa
 
 samples = []
-print(f"🚀 Iniciando geração para {len(problems)} problemas...")
+print(f"Iniciando geração para {len(problems)} problemas...")
 
 # --- PROMPT V17 (O "Segredo" do seu treino) ---
 # Usamos o System Prompt que ensinou ele a formatar
@@ -127,6 +127,4 @@ for task_id in tqdm(problems):
 
 # Salva o arquivo
 write_jsonl(OUTPUT_FILE, samples)
-print(f"✅ Arquivo gerado: {OUTPUT_FILE}")
-
-print(f"Rode manualmente: evaluate_functional_correctness {OUTPUT_FILE}")
+print(f"Arquivo gerado: {OUTPUT_FILE}")

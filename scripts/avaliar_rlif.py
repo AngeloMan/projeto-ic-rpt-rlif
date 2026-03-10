@@ -12,10 +12,10 @@ ADAPTER_PATH = "qwen-rlif" # Pasta gerada pelo seu treino atual
 OUTPUT_FILE = "samples_rlif.jsonl"
 DEVICE = "cuda"
 
-print(f"🔄 Carregando Tokenizer: {BASE_MODEL}...")
+print(f"Carregando Tokenizer: {BASE_MODEL}...")
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
 
-print(f"🔄 Carregando Modelo Base: {BASE_MODEL}...")
+print(f"Carregando Modelo Base: {BASE_MODEL}...")
 base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
     torch_dtype=torch.float16,
@@ -23,10 +23,10 @@ base_model = AutoModelForCausalLM.from_pretrained(
     trust_remote_code=True
 )
 
-print(f"📏 Ajustando embeddings...")
+print(f"Ajustando embeddings...")
 base_model.resize_token_embeddings(len(tokenizer))
 
-print(f"🧠 Acoplando RLIF (LoRA): {ADAPTER_PATH}...")
+print(f"Acoplando RLIF (LoRA): {ADAPTER_PATH}...")
 model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
 model.eval()
 
@@ -53,7 +53,7 @@ def limpar_codigo(completion):
     return completion
 
 samples = []
-print("🚀 Gerando para avaliação...")
+print("Gerando para avaliação...")
 
 # Prompt igual ao treino para ativar a memória do modelo
 system_msg = "You are a Python coding engine. Respond ONLY with the indented function body."
@@ -91,13 +91,4 @@ for task_id in tqdm(problems):
     samples.append(dict(task_id=task_id, completion=final_completion))
 
 write_jsonl(OUTPUT_FILE, samples)
-print(f"✅ Arquivo {OUTPUT_FILE} gerado.")
-
-# Tenta avaliar
-try:
-    print("\n📊 Calculando Nota...")
-    from human_eval.evaluation import evaluate_functional_correctness
-    results = evaluate_functional_correctness(sample_file=OUTPUT_FILE, k=[1], n_workers=4, timeout=3.0)
-    print(f"\n🏆 RESULTADO FINAL: {results}")
-except Exception as e:
-    print(f"⚠️ Erro ao avaliar: {e}")
+print(f"Arquivo {OUTPUT_FILE} gerado.")

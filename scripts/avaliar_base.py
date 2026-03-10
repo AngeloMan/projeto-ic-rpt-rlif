@@ -107,6 +107,4 @@ for task_id in tqdm(problems):
     samples.append(dict(task_id=task_id, completion=final_completion))
 
 write_jsonl(OUTPUT_FILE, samples)
-print(f"✅ Arquivo {OUTPUT_FILE} gerado.")
-print("Rode a avaliação novamente:")
-print(f"evaluate_functional_correctness {OUTPUT_FILE}")
+print(f"Arquivo {OUTPUT_FILE} gerado.")
